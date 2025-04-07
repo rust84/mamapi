@@ -8,9 +8,6 @@ import math
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 
-# can probably catch the specific 500 message saying the cookie is formatted wrong which would allow for a close of the container directly
-#currently the exception catching system is overriding our message matching system - let the message matches go first
-
 logger = logging.getLogger(__name__)
 formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="[%Y-%m-%d %H:%M:%S]")
 stdout_handler = logging.StreamHandler(sys.stdout)
