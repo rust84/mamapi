@@ -1,3 +1,5 @@
+#docker compose -f compose.dev.yaml up -d --force-recreate
+#the force recreate is just in case you're tweaking things on the .env
 services:
   mamapidev:
     build:
@@ -9,4 +11,4 @@ services:
     environment:
       - MAM_ID=${MAM_ID}
       - DEBUG=${DEBUG}
-    network_mode: "container:gluetun" #allows you to run behind gluetun even though it's in a different compose stack
+    network_mode: "container:gluetun"
