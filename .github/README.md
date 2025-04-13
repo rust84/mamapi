@@ -31,3 +31,9 @@ services:
   mamapi:
     network_mode: "container:gluetun"
 ```
+
+
+Upcoming features:
+- Add a ~15 day forced requery in case these sessions expire eventually
+- May add an optional fix for logging timezone
+- Considering rootless implementation
