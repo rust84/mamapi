@@ -165,12 +165,16 @@ def processResponse(jsonResponse):
         time.sleep(300)
 
 try:
-    logger.setLevel(logging.INFO) # level is DEBUG for debugging purposes, INFO for general use
     logger.info("Starting script. Thanks for using elforkhead's mamapi.py")
     logger.info("https://github.com/elforkhead/mamapi")
-    logger.info("Logger level: INFO (default) - routine, unchanged IP checks are not logged, so log may appear empty without errors or IP changes") #disable these blurbs when in debug
-    logger.info("IP is checked for changes every 5 minutes")
-    logger.info("This rate may be adjusted after errors or API ratelimit")
+    if os.getenv("DEBUG"):
+        logger.setLevel(logging.DEBUG)
+        logger.info("Logger level: DEBUG (enabled by DEBUG env var)") 
+    else:
+        logger.setLevel(logging.INFO)
+        logger.info("Logger level: INFO (default)") 
+        logger.info("Routine, unchanged IP checks are not logged, so log may appear empty without errors or IP changes")
+    logger.info("Checking for IP changes every 5 minutes")
     mam_id = chooseMAM_ID()
     json_data = loadData()
     while True:
