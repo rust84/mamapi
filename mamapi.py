@@ -199,6 +199,7 @@ try:
                 logger.info(f"Last successful IP update was at {json_data["last_successful_update"]}. Sleeping for {minutes_remaining} minutes until an hour has passed")
                 time.sleep((minutes_remaining * 60) + 2)
         else:
+            logger.debug(f"Detected IP change. Old IP: '{json_data["last_updated_ip"]}' New IP: '{current_ip}'")
             r = contactMAM(mam_id)
             processResponse(r)
             continue
