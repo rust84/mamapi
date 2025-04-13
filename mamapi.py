@@ -173,7 +173,8 @@ try:
     else:
         logger.setLevel(logging.INFO)
         logger.info("Logger level: INFO (default)") 
-        logger.info("Routine, unchanged IP checks are not logged, so log may appear empty without errors or IP changes")
+        logger.info("Routine IP checks are not logged")
+        logger.info("Log may appear empty if there are no IP changes")
     logger.info("Checking for IP changes every 5 minutes")
     mam_id = chooseMAM_ID()
     json_data = loadData()
