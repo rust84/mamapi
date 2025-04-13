@@ -1,0 +1,11 @@
+services:
+  mamapidev:
+    build:
+      context: .
+    container_name: mamapidev
+    volumes:
+      - ../instance/data:/data
+      - ../mamapi.py:/usr/src/app/mamapi.py:ro
+    environment:
+      - MAM_ID=${MAM_ID}
+    network_mode: "container:gluetun" #allows you to run behind gluetun even though it's in a different compose stack
