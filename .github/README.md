@@ -1,3 +1,4 @@
+General docker compose format:
 ```yaml
 services:
   mamapi:
