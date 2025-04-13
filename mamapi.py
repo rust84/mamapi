@@ -165,13 +165,13 @@ def processResponse(jsonResponse):
         time.sleep(300)
 
 try:
+    logger.setLevel(logging.INFO)
     logger.info("Starting script. Thanks for using elforkhead's mamapi.py")
     logger.info("https://github.com/elforkhead/mamapi")
     if os.getenv("DEBUG"):
         logger.setLevel(logging.DEBUG)
         logger.info("Logger level: DEBUG (enabled by DEBUG env var)") 
     else:
-        logger.setLevel(logging.INFO)
         logger.info("Logger level: INFO (default)") 
         logger.info("Routine IP checks are not logged")
         logger.info("Log may appear empty if there are no IP changes")
