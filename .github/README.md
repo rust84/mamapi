@@ -3,7 +3,6 @@ General docker compose format:
 services:
   mamapi:
     image: elforkhead/mamapi:latest
-    container_name: mamapi
     volumes:
       - ./mamapi/data:/data
     environment:
