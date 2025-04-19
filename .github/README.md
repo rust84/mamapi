@@ -1,3 +1,5 @@
+![Docker Pulls](https://img.shields.io/docker/pulls/elforkhead/mamapi)
+
 General docker compose format:
 ```yaml
 services:
