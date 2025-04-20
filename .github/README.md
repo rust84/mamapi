@@ -10,6 +10,7 @@ services:
       - ./mamapi/data:/data
     environment:
       - MAM_ID=yourmamapihere
+      - TZ=Etc/UTC #https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 ```
 
 Enable debug-level logging:
@@ -34,7 +35,5 @@ services:
     network_mode: "container:gluetun"
 ```
 
-
 Upcoming features:
 - Add a ~15 day forced requery in case these sessions expire eventually
-- May add an optional fix for logging timezone

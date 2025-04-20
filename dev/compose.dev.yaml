@@ -11,4 +11,5 @@ services:
     environment:
       - MAM_ID=${MAM_ID}
       - DEBUG=${DEBUG}
+      - TZ=${TZ}
     network_mode: "container:gluetun"
