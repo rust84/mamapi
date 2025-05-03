@@ -6,6 +6,7 @@ services:
   mamapi:
     image: elforkhead/mamapi:latest
     container_name: mamapi
+    restart: unless-stopped
     volumes:
       - ./mamapi/data:/data
     environment:
