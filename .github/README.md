@@ -22,14 +22,14 @@ services:
       - DEBUG=True
 ```
 
-Run behind a gluetun service in the same compose.yaml as mamapi:
+Run behind a gluetun service in the same compose as mamapi:
 ```yaml
 services:
   mamapi:
     network_mode: "service:gluetun"
 ```
 
-Run behind a gluetun container that was not started in the same compose.yaml as mamapi:
+Run behind a gluetun container that was not started in the same compose as mamapi:
 ```yaml
 services:
   mamapi:
