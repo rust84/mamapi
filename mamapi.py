@@ -80,16 +80,18 @@ def returnIP():
     except requests.exceptions.Timeout:
         logger.error(f"Request to external IP tracker timed out")
         logger.error("Sleeping for 10 minutes")
+        internet_is_out = True
         time.sleep(600)
         return False
     except requests.exceptions.RequestException as err:
         logger.error(f"Unexpected error during HTTP GET: {err}")
         logger.error("Sleeping for 10 minutes")
+        internet_is_out = True
         time.sleep(600)
         return False
     if r.status_code == 200:
         if internet_is_out:
-            logger.info("Internet restored")
+            logger.info("Connection restored")
             logger.info(f"Fetched external IP: {r.text}")
             internet_is_out = False
             return r.text
@@ -99,6 +101,7 @@ def returnIP():
     else:
         logger.error("External IP check failed for unknown reason")
         logger.error("Sleeping for 10 minutes")
+        internet_is_out = True
         time.sleep(600)
         return False
 
