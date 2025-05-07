@@ -23,6 +23,8 @@ logger.addHandler(stderr_handler)
 current_ip = ""
 mam_id = ""
 
+internet_is_out = False
+
 json_path = Path('/data/mamapi.json')
 json_data = {}
 
@@ -63,22 +65,41 @@ def saveData():
         json.dump(json_serializable_data, f, indent=4)
 
 def returnIP():
+    global internet_is_out
     logger.debug("Attempting to grab external IP...")
     try:
         r = requests.get("https://api.ipify.org")
     except requests.exceptions.ConnectionError:
-        logger.error(f"Failed to grab external IP - no internet")
+        if not internet_is_out:
+            logger.error("Failed to grab external IP - no internet")
+            logger.error("Checking for internet every 5 minutes")
+        logger.debug("Failed internet check")
+        internet_is_out = True
+        time.sleep(300)
         return False
     except requests.exceptions.Timeout:
         logger.error(f"Request to external IP tracker timed out")
+        logger.error("Sleeping for 10 minutes")
+        time.sleep(600)
         return False
     except requests.exceptions.RequestException as err:
         logger.error(f"Unexpected error during HTTP GET: {err}")
+        logger.error("Sleeping for 10 minutes")
+        time.sleep(600)
         return False
     if r.status_code == 200:
-        logger.debug(f"Fetched external IP: {r.text}")
-        return r.text
+        if internet_is_out:
+            logger.info("Internet restored")
+            logger.info(f"Fetched external IP: {r.text}")
+            internet_is_out = False
+            return r.text
+        else:
+            logger.debug(f"Fetched external IP: {r.text}")
+            return r.text
     else:
+        logger.error("External IP check failed for unknown reason")
+        logger.error("Sleeping for 10 minutes")
+        time.sleep(600)
         return False
 
 def chooseMAM_ID():
@@ -181,8 +202,6 @@ try:
     while True:
         current_ip = returnIP()
         if not current_ip:
-            logger.error("Unable to fetch current IP. Sleeping for 10 minutes")
-            time.sleep(600)
             continue
         if current_ip == json_data["last_updated_ip"]:
             logger.debug("Current IP identical to last update sent to MAM, sleeping for 5 minutes")
