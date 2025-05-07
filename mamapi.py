@@ -170,8 +170,9 @@ def processResponse(jsonResponse):
         logger.critical("The script will now exit")
         sys.exit(1)
     elif json_response_msg == "Invalid session".casefold():
-        logger.critical("Per MAM: 'The system deemed the session invalid (bad mam_id value, or you've moved off the locked IP/ASN.'")
-        logger.critical("I often encounter this error when using an ASN locked session. The API doesn't seem to invalidate sessions from an unexpected IP when IP locked, consider switching to an IP locked session")
+        logger.critical("Per MAM: 'The system deemed the session invalid (bad mam_id value, or you've moved off the locked IP/ASN.)'")
+        logger.critical("ASN locked sessions sometimes produce this error")
+        logger.critical("Sometimes sessions are randomly invalidated")
         logger.critical("The script will now exit")
         sys.exit(1)
     elif json_response_msg == "No Session Cookie".casefold():
