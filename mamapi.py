@@ -5,6 +5,7 @@ import logging
 import json
 import time
 import math
+import copy
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 
@@ -22,28 +23,28 @@ logger.addHandler(stderr_handler)
 
 current_ip = ""
 mam_id = ""
+first_run = True
 
 internet_is_out = False
 
 json_path = Path('/data/mamapi.json')
 json_data = {}
+blankTemplate = {"last_successful_update": 0, "last_updated_ip": "", "last_mam_id": "", "last_mam_id_invalid": False}
 
 def timeNow():
     return datetime.now(timezone.utc)
 
-def rateLimited(timestamp): #just tests if timestamp was more than 60 minutes ago, false if it was, also false if the timestamp is negative and we can't figure out how long if it has been
+def rateLimited(timestamp):
     if not timestamp:
         logger.debug(f"Returned False for ratelimited as provided empty parameter")
         return False
-    logger.debug(f"rateLimited fxn: comparing NOW as '{timeNow().strftime('%Y-%m-%d %H:%M:%S')}' to provided timestamp '{timestamp.strftime('%Y-%m-%d %H:%M:%S')} - should result in returning '{not ((timeNow() - timestamp) > timedelta(minutes=60))}'")
-    return not ((timeNow() - timestamp) > timedelta(minutes=60))
+    return (timeNow() - timestamp) <= timedelta(minutes=60)
 
 def loadData():
-    blankTemplate = {"last_successful_update": 0, "last_updated_ip": ""}
     try:
         with open(json_path) as f:
             data = json.load(f)
-            if len(data) == len(blankTemplate):
+            if set(data.keys()) == set(blankTemplate.keys()):
                 data["last_successful_update"] = datetime.fromtimestamp(data["last_successful_update"], timezone.utc)
                 return data
             else:
@@ -53,11 +54,11 @@ def loadData():
         return blankTemplate
     except PermissionError:
         logger.critical("Loading .json data threw permission error - likely lacking read permission.")
-        logger.critical("The script will now exit")
+        logger.critical("EXITING SCRIPT")
         sys.exit(1)
 
 def saveData():
-    json_serializable_data = json_data.copy()
+    json_serializable_data = copy.deepcopy(json_data)
     for key, value in json_serializable_data.items():
         if isinstance(value, datetime):
             json_serializable_data[key] = value.timestamp()
@@ -105,13 +106,40 @@ def returnIP():
         time.sleep(600)
         return False
 
+def briefReturnIP():
+    try:
+        r = requests.get("https://api.ipify.org")
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Initialization IP check failed: {e}")
+        return False
+    if r.status_code == 200:
+        logger.info(f"Current IP: {r.text}")
+        return True
+    else:
+        logger.error("Initialization IP check failed")
+        return False
+
 def chooseMAM_ID():
-    if not os.getenv("MAM_ID"):
+    global json_data
+    env_mam_id = os.getenv("MAM_ID")
+    if not env_mam_id:
         logger.critical("No mam_id assigned to environment variable")
-        logger.critical("The script will now exit")
+        logger.critical("EXITING SCRIPT")
         sys.exit(1)
-    logger.debug(f"Using mam_id: {os.getenv("MAM_ID")}")
-    return os.getenv("MAM_ID")
+    if json_data["last_mam_id_invalid"] and (env_mam_id == json_data["last_mam_id"]):
+        logger.critical("This mam_id/session was previously declared invalid")
+        logger.critical("See the thread for the latest discussion of this issue")
+        logger.critical("Please generate a new session")
+        logger.critical("If you are still seeing this after changing your mam_id's env variable in your configuration, you may need to rebuild the container to apply the new value")
+        logger.critical("EXITING SCRIPT")
+        sys.exit(1)
+    if env_mam_id != json_data["last_mam_id"]:
+        logger.info("Detected new mam_id - clearing previous session data")
+        json_data = blankTemplate.copy()
+        json_data["last_mam_id"] = env_mam_id
+        saveData()
+    logger.debug(f"Using mam_id: {env_mam_id}")
+    return env_mam_id
 
 def contactMAM(inputMAMID):
     while True:
@@ -121,10 +149,10 @@ def contactMAM(inputMAMID):
                 r = requests.get("https://t.myanonamouse.net/json/dynamicSeedbox.php", cookies={"mam_id": inputMAMID})
                 # r.raise_for_status()
                 logger.debug(f"Received HTTP status code: '{r.status_code}'")
-                if str(r.status_code) == "500":
+                if r.status_code == 500:
                     logger.critical("Received HTTP status code '500'")
                     logger.critical("This is usually due to an incorrectly formatted mam_id")
-                    logger.critical("The script will now exit")
+                    logger.critical("EXITING SCRIPT")
                     sys.exit(1)
                 return r
             except requests.exceptions.ConnectionError:
@@ -142,6 +170,7 @@ def contactMAM(inputMAMID):
             time.sleep(1800)
 
 def processResponse(jsonResponse):
+    json_response_msg = ""
     try:
         json_response_msg = jsonResponse.json().get("msg", "").casefold()
         logger.info(f"Received response: '{json_response_msg}'")
@@ -162,27 +191,30 @@ def processResponse(jsonResponse):
         time.sleep(300)
     elif json_response_msg == "Last Change too recent".casefold():
         logger.warning("MAM rejects due to last change too recent, and last successful update is unknown: retrying in 30 minutes")
-        json_data["last_successful_update"] = 0
+        json_data["last_successful_update"] = datetime.fromtimestamp(0, timezone.utc)
         saveData()
         time.sleep(1800)
     elif json_response_msg == "Incorrect session type".casefold():
         logger.critical("Per MAM: 'The session cookie is not to a locked session, or not a session that is allowed the dynamic seedbox setting'")
-        logger.critical("The script will now exit")
+        logger.critical("EXITING SCRIPT")
         sys.exit(1)
     elif json_response_msg == "Invalid session".casefold():
         logger.critical("Per MAM: 'The system deemed the session invalid (bad mam_id value, or you've moved off the locked IP/ASN)'")
         logger.critical("See the thread for the latest discussion of this issue")
-        logger.critical("The script will now exit")
+        logger.debug("Declaring current mam_id invalid")
+        json_data["last_mam_id_invalid"] = True
+        saveData()
+        logger.critical("EXITING SCRIPT")
         sys.exit(1)
     elif json_response_msg == "No Session Cookie".casefold():
         logger.critical("Per MAM: 'You didn't properly provide the mam_id session cookie.'")
         logger.critical(f"Used the following mam_id for this request: {mam_id}")
         logger.critical("Your mam_id may be formatted incorrectly")
-        logger.critical("The script will now exit")
+        logger.critical("EXITING SCRIPT")
         sys.exit(1)
     elif json_response_msg == "":
         logger.warning("MAM HTTP response did not include a 'msg'")
-        logger.error(f"HTTP response status code received: '{jsonResponse.get("status_code")}'")
+        logger.error(f"HTTP response status code received: '{jsonResponse.status_code}'")
         time.sleep(300)
     else:
         logger.error(f"Received unknown json response message: {json_response_msg}")
@@ -190,46 +222,45 @@ def processResponse(jsonResponse):
 
 try:
     logger.setLevel(logging.INFO)
-    logger.info("Starting script. Thanks for using elforkhead's mamapi.py")
+    logger.info("STARTING SCRIPT")
     logger.info("https://github.com/elforkhead/mamapi")
+    briefReturnIP()
     if os.getenv("DEBUG"):
         logger.setLevel(logging.DEBUG)
-        logger.info("Logger level: DEBUG (enabled by DEBUG env var)") 
-    else:
-        logger.info("Logger level: INFO (default)") 
-        logger.info("Routine IP checks are not logged")
-        logger.info("Log may appear empty if there are no IP changes")
+        logger.info("Logger level: DEBUG (enabled by DEBUG env var)")
     logger.info("Checking for IP changes every 5 minutes")
-    mam_id = chooseMAM_ID()
     json_data = loadData()
+    mam_id = chooseMAM_ID()
     while True:
         current_ip = returnIP()
         if not current_ip:
             continue
         if current_ip == json_data["last_updated_ip"]:
+            if first_run:
+                logger.info("Current IP matches last recorded update sent to MAM")
+                first_run = False
             logger.debug("Current IP identical to last update sent to MAM, sleeping for 5 minutes")
             time.sleep(300)
             continue
-        elif rateLimited(json_data["last_successful_update"]):
+        if rateLimited(json_data["last_successful_update"]):
             deltaTo60 = 0
             minutes_remaining = 0
             deltaTo60 = timedelta(hours=1) - (timeNow() - json_data["last_successful_update"])
             minutes_remaining = math.ceil(max(deltaTo60.total_seconds() / 60, 0))
-            logger.info(f"Current IP ({current_ip}) is different than previous update ({json_data["last_updated_ip"]}), but we are currently rate limited.")
-            logger.debug("rateLimited function returned positive: time delta calculated as {minutes_remaining} minutes")
-            if minutes_remaining < 0:
-                logger.error(f"Received a positive from rateLimited, but calculated inconsistent time delta of {minutes_remaining}. Sleeping for an hour and resetting update timestamp")
-                json_data["last_successful_update"] = 0
-                saveData()
-                time.sleep(3600)
-            else:
-                logger.info(f"Last successful IP update was at {json_data["last_successful_update"]}. Sleeping for {minutes_remaining} minutes until an hour has passed")
-                time.sleep((minutes_remaining * 60) + 2)
+            logger.info(f"Current IP ({current_ip}) is different than previous update ({json_data['last_updated_ip']}), but we are currently rate limited.")
+            logger.debug(f"rateLimited function returned positive: time delta calculated as {minutes_remaining} minutes")
+            logger.info(f"Last successful IP update was at {json_data["last_successful_update"]}. Sleeping for {minutes_remaining} minutes until an hour has passed")
+            first_run = False
+            time.sleep((minutes_remaining * 60) + 2)
         else:
-            logger.info(f"Detected IP change. Old IP: '{json_data["last_updated_ip"]}' New IP: '{current_ip}'")
+            first_run = False
+            if json_data["last_updated_ip"]:
+                logger.info(f"Detected IP change. Old IP: '{json_data["last_updated_ip"]}' New IP: '{current_ip}'")
+            else:
+                logger.info("No known previous IP update - attempting to update session")
             r = contactMAM(mam_id)
             processResponse(r)
             continue
 except Exception as e:
     logger.critical(f"Caught exception: {e}")
-    logger.critical("The script will now exit")
+    logger.critical("EXITING SCRIPT")
