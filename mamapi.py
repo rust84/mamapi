@@ -171,8 +171,7 @@ def processResponse(jsonResponse):
         sys.exit(1)
     elif json_response_msg == "Invalid session".casefold():
         logger.critical("Per MAM: 'The system deemed the session invalid (bad mam_id value, or you've moved off the locked IP/ASN)'")
-        logger.critical("This can be a complicated issue to solve")
-        logger.critical("Toggling ASN locking on or off sometimes helps")
+        logger.critical("See the thread for the latest discussion of this issue")
         logger.critical("The script will now exit")
         sys.exit(1)
     elif json_response_msg == "No Session Cookie".casefold():
