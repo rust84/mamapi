@@ -130,7 +130,7 @@ def chooseMAM_ID():
         logger.critical("This mam_id/session was previously declared invalid")
         logger.critical("Please generate a new mam_id/session")
         logger.critical("See the thread for the latest discussion of this issue")
-        logger.critical("If you are still seeing this after changing your mam_id's env variable in your configuration, you may need to rebuild the container to apply the new value")
+        logger.critical("If you are still seeing this after changing your mam_id, you may need to rebuild the container to apply the new value")
         logger.critical("EXITING SCRIPT")
         sys.exit(1)
     if env_mam_id != json_data["last_mam_id"]:
