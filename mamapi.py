@@ -257,7 +257,7 @@ try:
             if json_data["last_updated_ip"]:
                 logger.info(f"Detected IP change. Old IP: '{json_data["last_updated_ip"]}' New IP: '{current_ip}'")
             else:
-                logger.info("No known previous IP update - attempting to update session")
+                logger.info("No recorded session IP - attempting to update session")
             r = contactMAM(mam_id)
             processResponse(r)
             continue
