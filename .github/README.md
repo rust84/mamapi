@@ -36,5 +36,6 @@ services:
     network_mode: "container:gluetun"
 ```
 
-Upcoming features:
-- Add a ~15 day forced requery in case these sessions expire eventually
+WIP features:
+- Associate a given mam_id with ASN of original session, avoid updating API from a different ASN to preserve the session.
+- Intelligently select the correct mam_id for a given ASN from a set of mam_ids.
