@@ -249,7 +249,7 @@ try:
             minutes_remaining = math.ceil(max(deltaTo60.total_seconds() / 60, 0))
             logger.info(f"Current IP ({current_ip}) is different than previous update ({json_data['last_updated_ip']}), but we are currently rate limited.")
             logger.debug(f"rateLimited function returned positive: time delta calculated as {minutes_remaining} minutes")
-            logger.info(f"Last successful IP update was at {json_data["last_successful_update"]}. Sleeping for {minutes_remaining} minutes until an hour has passed")
+            logger.info(f"Last successful IP update was at {json_data["last_successful_update"].astimezone().strftime('%Y-%m-%d %H:%M')}. Sleeping for {minutes_remaining} minutes until an hour has passed")
             first_run = False
             time.sleep((minutes_remaining * 60) + 2)
         else:
