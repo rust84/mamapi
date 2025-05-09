@@ -127,7 +127,7 @@ def chooseMAM_ID():
         logger.critical("EXITING SCRIPT")
         sys.exit(1)
     if json_data["last_mam_id_invalid"] and (env_mam_id == json_data["last_mam_id"]):
-        logger.critical("This mam_id/session was previously declared invalid")
+        logger.critical("This mam_id/session was previously marked as invalid")
         logger.critical("Please generate a new mam_id/session")
         logger.critical("See the thread for the latest discussion of this issue")
         logger.critical("If you are still seeing this after changing your mam_id, you may need to rebuild the container to apply the new value")
@@ -201,7 +201,7 @@ def processResponse(jsonResponse):
     elif json_response_msg == "Invalid session".casefold():
         logger.critical("Per MAM: 'The system deemed the session invalid (bad mam_id value, or you've moved off the locked IP/ASN)'")
         logger.critical("See the thread for the latest discussion of this issue")
-        logger.debug("Declaring current mam_id invalid")
+        logger.debug("Marking current mam_id as invalid")
         json_data["last_mam_id_invalid"] = True
         saveData()
         logger.critical("EXITING SCRIPT")
