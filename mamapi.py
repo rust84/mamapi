@@ -27,7 +27,7 @@ first_run = True
 
 internet_is_out = False
 
-json_path = Path('/data/mamapi.json')
+json_path = Path('/config/mamapi.json')
 json_data = {}
 blankTemplate = {"last_successful_update": 0, "last_updated_ip": "", "last_mam_id": "", "last_mam_id_invalid": False}
 
